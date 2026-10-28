@@ -1,221 +1,121 @@
 /**
- * Plugin CodeSource pour TinyMCE 7
- * Éditeur de code source avec coloration syntaxique CodeMirror 6
- *
- * @copyright (C) 2008 - 2026 Gerits Aurelien (Magix CMS)
- * @license GPL-3.0-or-later
+ * CodeSource adapter for TinyMCE 6, using the upstream CodeMirror 6 bundle.
+ * Based on https://github.com/gtraxx/tinymce-codesource
+ * Copyright (C) 2008-2026 Gerits Aurelien (Magix CMS).
+ * GPL-3.0-or-later. See COPYING.
+ * Modified 2026-10-28: shared Promise loader, per-dialog lifecycle,
+ * TinyMCE 6 API, undo/change notifications, no automatic regex beautifier.
+ * Keep upstream codemirror.bundle.js beside this file. Browser testing required.
  */
 (function () {
     'use strict';
-
+    let dependency = null;
+    let sequence = 0;
+    const checkBundle = function () {
+        const cm = window.CM6;
+        if (!cm || !cm.EditorView || !cm.EditorState || !cm.basicSetup || !cm.html || !cm.oneDark) {
+            throw new Error('Incomplete or missing CodeMirror bundle');
+        }
+        return cm;
+    };
+    const load = function (url) {
+        if (window.CM6) return Promise.resolve().then(checkBundle);
+        if (!dependency) {
+            dependency = new Promise(function (resolve, reject) {
+                const script = document.createElement('script');
+                script.src = url + '/codemirror.bundle.js';
+                script.onload = function () {
+                    try { resolve(checkBundle()); } catch (error) { reject(error); }
+                };
+                script.onerror = function () { reject(new Error('Failed to load ' + script.src)); };
+                document.head.appendChild(script);
+            }).catch(function (error) { dependency = null; throw error; });
+        }
+        return dependency;
+    };
     tinymce.PluginManager.add('codesource', function (editor, url) {
-        let cmInstance = null;
-
-        // 1. Formateur HTML (Beautifier) ultra-léger et sécurisé
-        const formatHTML = function (html) {
-            // A. Extraire et sauvegarder les blocs sensibles pour préserver leur whitespace
-            const protectedBlocks = [];
-            let safeHtml = html.replace(/(<(pre|script|style|textarea)[^>]*>)([\s\S]*?)(<\/\2>)/gi, function(match) {
-                protectedBlocks.push(match);
-                // On encadre de sauts de ligne pour s'assurer qu'ils restent isolés
-                return '\n___PROTECTED_BLOCK_' + (protectedBlocks.length - 1) + '___\n';
-            });
-
-            let indentLevel = 0;
-            let formatted = safeHtml
-                .replace(/>\s*</g, '>\n<') // Casse les balises collées (hors blocs protégés)
-                .split('\n')
-                .map(function (line) {
-                    line = line.trim();
-                    if (!line) return '';
-
-                    // Restitution d'un bloc protégé avec l'indentation parente courante
-                    if (line.match(/^___PROTECTED_BLOCK_\d+___$/)) {
-                        return '  '.repeat(indentLevel) + line;
-                    }
-
-                    // Décrémenter l'indentation pour les balises fermantes
-                    if (line.match(/^<\/(?!html)/)) {
-                        indentLevel = Math.max(0, indentLevel - 1);
-                    }
-
-                    const formattedLine = '  '.repeat(indentLevel) + line;
-
-                    // Incrémenter l'indentation pour les balises ouvrantes
-                    // Ignore les auto-fermantes natives et celles se terminant par "/>" (ex: <path />)
-                    if (line.match(/^<(?!\/|!--|img|br|hr|input|meta|link|area|base|col|param|source|track|embed|wbr)[^>]+>$/) && !line.endsWith('/>')) {
-                        indentLevel++;
-                    }
-
-                    return formattedLine;
-                })
-                .join('\n');
-
-            // B. Restaurer le contenu exact des blocs sensibles
-            protectedBlocks.forEach(function(block, index) {
-                formatted = formatted.replace('___PROTECTED_BLOCK_' + index + '___', block);
-            });
-
-            return formatted;
+        let active = null;
+        const notify = function (text) {
+            editor.notificationManager.open({ text: text, type: 'error' });
         };
-
-        // 2. Injection du CSS de base
-        const injectStyles = function () {
-            const styleId = 'cm6-tinymce-modal-style';
-            if (!document.getElementById(styleId)) {
-                const style = document.createElement('style');
-                style.id = styleId;
-                style.textContent = `
-          .tox-dialog__body-content:has(#cm-editor-modal) {
-            padding: 0 !important;
-          }
-          #cm-editor-modal {
-            height: 68vh;
-            min-height: 400px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-            /* Plus de background forcé ici, oneDark s'en charge ! */
-          }
-        `;
-                document.head.appendChild(style);
-            }
-        };
-
-        // 3. Chargement autonome du bundle CM6
-        const ensureDependencies = function (callback) {
-            if (window.CM6 && window.CM6.openSearchPanel) { // Sécurité supplémentaire
-                callback();
-                return;
-            }
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = url + '/codemirror.bundle.js?v=1.1';
-            script.onload = callback;
-            script.onerror = function () {
-                editor.notificationManager.open({ text: 'Échec du chargement de CodeMirror 6', type: 'error' });
-            };
-            document.head.appendChild(script);
-        };
-
-        // 4. Ouverture de la modale TinyMCE 7
-        const openEditorDialog = function () {
-            ensureDependencies(function () {
-                injectStyles();
-
-                const { EditorView, EditorState, basicSetup, html, oneDark, openSearchPanel } = window.CM6;
-
-                editor.windowManager.open({
-                    title: 'Code source HTML',
+        const open = function () {
+            if (active) return;
+            load(url).then(function (cm) {
+                if (active || !editor.getBody()) return;
+                sequence += 1;
+                const id = 'wr-cm6-' + sequence;
+                let view = null;
+                let closed = false;
+                active = editor.windowManager.open({
+                    title: 'HTML-код',
                     size: 'large',
-                    body: {
-                        type: 'panel',
-                        items: [
-                            {
-                                type: 'htmlpanel',
-                                html: '<div id="cm-editor-modal"></div>'
-                            }
-                        ]
-                    },
+                    body: { type: 'panel', items: [
+                        { type: 'htmlpanel', html: '<div id="' + id + '" style="height:60vh;min-height:320px;width:100%"></div>' }
+                    ] },
                     buttons: [
-                        { type: 'cancel', name: 'cancel', text: 'Annuler' },
-                        { type: 'custom', name: 'search', text: 'Rechercher', icon: 'search' },
-                        { type: 'submit', name: 'save', text: 'Enregistrer', primary: true }
+                        { type: 'cancel', text: 'Отмена' },
+                        { type: 'custom', name: 'search', text: 'Поиск', icon: 'search', enabled: !!cm.openSearchPanel },
+                        { type: 'submit', text: 'Сохранить', primary: true }
                     ],
                     onAction: function (api, details) {
-                        if (details.name === 'search' && cmInstance) {
-                            openSearchPanel(cmInstance);
-                        }
+                        if (details.name === 'search' && view && cm.openSearchPanel) cm.openSearchPanel(view);
                     },
                     onSubmit: function (api) {
-                        if (cmInstance) {
-                            const updatedContent = cmInstance.state.doc.toString();
-                            editor.setContent(updatedContent);
-                            cmInstance.destroy();
-                            cmInstance = null;
-                        }
+                        if (!view) { notify('Редактор кода еще не готов. Содержимое не изменено.'); return; }
+                        const content = view.state.doc.toString();
+                        editor.undoManager.transact(function () { editor.setContent(content); });
+                        editor.setDirty(true);
+                        editor.nodeChanged();
+                        editor.dispatch('change');
                         api.close();
                     },
                     onClose: function () {
-                        if (cmInstance) {
-                            cmInstance.destroy();
-                            cmInstance = null;
-                        }
+                        closed = true;
+                        if (view) { view.destroy(); view = null; }
+                        active = null;
                     }
                 });
-
-                // 5. Initialisation de CodeMirror
-                setTimeout(function () {
+                window.setTimeout(function () {
+                    if (closed) return;
                     try {
-                        const container = document.getElementById('cm-editor-modal');
-                        if (!container) return;
-
-                        // 👉 LA SOLUTION MAGIQUE : LE SHADOW DOM
-                        // On crée un DOM isolé pour bloquer l'interférence du CSS de TinyMCE
-                        const shadowRoot = container.attachShadow({ mode: 'open' });
-
-                        const rawCode = editor.getContent({ source_view: true });
-                        const beautifulCode = formatHTML(rawCode);
-
-                        // Structure visuelle confinée dans le Shadow DOM
-                        const customTheme = EditorView.theme({
-                            "&": {
-                                height: "100%",
-                                fontSize: "14px",
-                                fontFamily: "Menlo, Monaco, Consolas, 'Courier New', monospace"
-                            },
-                            ".cm-scroller": { overflow: "auto" },
-                            "&.cm-focused": { outline: "none" }
+                        const container = document.getElementById(id);
+                        if (!container) throw new Error('Dialog container not found');
+                        const shadow = container.attachShadow({ mode: 'open' });
+                        const theme = cm.EditorView.theme({
+                            '&': { height: '100%', fontSize: '14px', fontFamily: 'monospace' },
+                            '.cm-scroller': { overflow: 'auto' },
+                            '&.cm-focused': { outline: 'none' }
                         });
-
-                        cmInstance = new EditorView({
-                            state: EditorState.create({
-                                doc: beautifulCode,
-                                extensions: [
-                                    basicSetup,
-                                    html(),
-                                    oneDark,
-                                    customTheme,
-                                    EditorView.lineWrapping
-                                ]
+                        view = new cm.EditorView({
+                            state: cm.EditorState.create({
+                                doc: editor.getContent({ source_view: true }),
+                                extensions: [cm.basicSetup, cm.html(), cm.oneDark, theme, cm.EditorView.lineWrapping]
                             }),
-                            // 👇 On accroche l'éditeur au Shadow DOM au lieu du conteneur classique
-                            parent: shadowRoot
+                            parent: shadow,
+                            root: shadow
                         });
-
-                        setTimeout(() => cmInstance.focus(), 50);
-                    } catch (e) {
-                        console.error("CodeSource ERREUR FATALE :", e);
+                        view.focus();
+                    } catch (error) {
+                        console.error('[codesource]', error);
+                        if (active) active.close();
+                        notify('Не удалось открыть CodeMirror. Исходное содержимое не изменено.');
                     }
-                }, 50);
-
+                }, 0);
+            }).catch(function (error) {
+                console.error('[codesource]', error);
+                notify('Не удалось загрузить CodeMirror 6. Проверьте codemirror.bundle.js и консоль.');
             });
         };
-
-        // 6. Enregistrement TinyMCE
-        editor.addCommand('mceCodeSource', openEditorDialog);
-
+        editor.on('remove', function () { if (active) active.close(); });
+        editor.addCommand('mceCodeSource', open);
         editor.ui.registry.addButton('codesource', {
-            icon: 'sourcecode',
-            tooltip: 'Code source (CodeMirror 6)',
-            onAction: () => editor.execCommand('mceCodeSource')
+            icon: 'sourcecode', tooltip: 'HTML-код (CodeMirror 6)', onAction: open
         });
-
         editor.ui.registry.addMenuItem('codesource', {
-            icon: 'sourcecode',
-            text: 'Code source...',
-            onAction: () => editor.execCommand('mceCodeSource')
+            icon: 'sourcecode', text: 'HTML-код (CodeMirror 6)', onAction: open
         });
-
-        return {
-            getMetadata: function () {
-                return {
-                    name: 'CodeSource CodeMirror 6',
-                    url: 'https://github.com/gtraxx/tinymce-codesource',
-                    author: 'Aurélien Gérits (Magix CMS)'
-                };
-            }
-        };
+        return { getMetadata: function () {
+            return { name: 'CodeSource - TinyMCE 6 adapter', url: 'https://github.com/gtraxx/tinymce-codesource' };
+        } };
     });
-})();
+}());
