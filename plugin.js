@@ -49,9 +49,15 @@
                 active = editor.windowManager.open({
                     title: 'HTML-код',
                     size: 'large',
-                    body: { type: 'panel', items: [
-                        { type: 'htmlpanel', html: '<div id="' + id + '" style="height:60vh;min-height:320px;width:100%"></div>' }
-                    ] },
+					body: {
+						type: 'panel',
+						items: [
+							{
+								type: 'htmlpanel',
+								html: '<div id="' + id + '" style="height:520px;min-height:180px;width:100%;overflow:hidden"></div>'
+							}
+						]
+					},
                     buttons: [
                         { type: 'cancel', text: 'Отмена' },
                         { type: 'custom', name: 'search', text: 'Поиск', icon: 'search', enabled: !!cm.openSearchPanel },
@@ -86,15 +92,60 @@
                             '.cm-scroller': { overflow: 'auto' },
                             '&.cm-focused': { outline: 'none' }
                         });
-                        view = new cm.EditorView({
-                            state: cm.EditorState.create({
-                                doc: editor.getContent({ source_view: true }),
-                                extensions: [cm.basicSetup, cm.html(), cm.oneDark, theme, cm.EditorView.lineWrapping]
-                            }),
-                            parent: shadow,
-                            root: shadow
-                        });
-                        view.focus();
+						view = new cm.EditorView({
+							state: cm.EditorState.create({
+								doc: editor.getContent({ source_view: true }),
+								extensions: [
+									cm.basicSetup,
+									cm.html(),
+									cm.oneDark,
+									theme,
+									cm.EditorView.lineWrapping
+								]
+							}),
+							parent: shadow,
+							root: shadow
+						});
+
+						// Ограничиваем внешний элемент CodeMirror.
+						Object.assign(view.dom.style, {
+							height: '100%',
+							maxHeight: '100%',
+							minHeight: '0',
+							width: '100%',
+							minWidth: '0',
+							overflow: 'hidden',
+							boxSizing: 'border-box'
+						});
+
+						// Прокручивается содержимое редактора, а не весь диалог.
+						Object.assign(view.scrollDOM.style, {
+							height: '100%',
+							maxHeight: '100%',
+							minHeight: '0',
+							minWidth: '0',
+							overflow: 'auto',
+							boxSizing: 'border-box'
+						});
+
+						window.requestAnimationFrame(function () {
+							if (!closed && view) {
+								view.requestMeasure();
+							}
+						});
+                        window.requestAnimationFrame(function () {
+							if (closed || !view) {
+								return;
+							}
+
+							view.requestMeasure();
+
+							window.requestAnimationFrame(function () {
+								if (!closed && view) {
+									view.requestMeasure();
+								}
+							});
+						});
                     } catch (error) {
                         console.error('[codesource]', error);
                         if (active) active.close();
