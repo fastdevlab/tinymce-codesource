@@ -1,82 +1,275 @@
-Plugin CodeSource (CodeMirror 6) for TinyMCE 7
-======================
+# CodeSource для TinyMCE 6
 
-Replace the default TinyMCE source code modal with a powerful, modern CodeMirror 6 editor. Includes automatic HTML beautifier, syntax highlighting, OneDark theme, and Shadow DOM isolation to prevent CSS conflicts.
+Редактор исходного HTML-кода на основе CodeMirror 6 для TinyMCE 6.
 
-### version
-[![release](https://img.shields.io/github/release/gtraxx/tinymce-codesource.svg)](https://github.com/magix-cms/tinymce-plugin-codesource/releases/latest)
-![Version TinyMCE](https://img.shields.io/badge/TinyMCE-7-blue)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-![Statut](https://img.shields.io/badge/projet-Open%20Source-orange)
+Адаптация проекта [gtraxx/tinymce-codesource](https://github.com/gtraxx/tinymce-codesource), первоначально предназначенного для TinyMCE 7.
 
-<img width="1200" height="741" alt="Image" src="https://github.com/user-attachments/assets/3ba8c1a4-3b05-4ceb-bea8-91fdd5099ff8" />
+Плагин открывает HTML содержимого в отдельном окне с подсветкой синтаксиса, темной темой OneDark, поиском и внутренней прокруткой. Его можно использовать вместо штатной кнопки просмотра исходного кода TinyMCE.
 
-## Soutenir le projet
+## Возможности
 
-Si vous souhaitez soutenir le développement, vous pouvez faire un don via PayPal :
+- Редактирование HTML с помощью CodeMirror 6.
+- Подсветка HTML и встроенных CSS/JavaScript.
+- Темная тема OneDark.
+- Поиск внутри исходного кода.
+- Перенос длинных строк.
+- Ограниченная область редактора с внутренней прокруткой.
+- Изоляция стилей CodeMirror через Shadow DOM.
+- Сохранение изменений через API TinyMCE.
+- Отмена сохраненного изменения через Undo.
+- Освобождение экземпляра CodeMirror после закрытия окна.
 
-[![Faire un don](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/aurelienstireg)
+Автоматический HTML-форматировщик из исходного проекта в этой адаптации не используется. Открытие окна не должно само по себе менять пробелы и переносы строк.
 
-Authors
--------
+После сохранения TinyMCE по-прежнему может нормализовать HTML в соответствии со своей конфигурацией.
 
-* Gerits Aurelien (Author-Developer) aurelien[at]magix-cms[point]com
+## Совместимость и статус
 
-### Features
+Адаптация предназначена для TinyMCE 6.
 
-* **CodeMirror 6 Engine**: Lightweight and blazing fast rendering.
-* **OneDark Theme**: Elegant dark mode for syntax highlighting (HTML, CSS, JS inline).
-* **Auto-Beautifier**: Automatically formats and indents TinyMCE's minified HTML output.
-* **Shadow DOM Isolation**: Protects the editor's syntax colors from aggressive TinyMCE modal CSS resets.
+Подключение и работа окна проверялись пользователем в MODX Revolution 3.2.4 с TinyMCE Rich Text Editor. По результатам проверки исправлялись размеры контейнера и внутренняя прокрутка CodeMirror.
 
-### Screenshot
+Это не подтверждение совместимости со всеми версиями MODX, TinyMCE, браузерами и сторонними настройками редактора. Перед использованием на рабочем сайте выполните проверку в своем окружении.
 
-<img width="1208" height="661" alt="Image" src="https://github.com/user-attachments/assets/db449e3d-f7c2-48ac-9b3d-f28173b942c0" />
+Совместимость этой адаптации с TinyMCE 7 и более новыми основными версиями отдельно не заявлена.
 
-### Installation
-* Download the `dist/codesource.zip` archive.
-* Unzip archive in tinyMCE plugin directory (`tiny_mce/plugins/codesource/`).
-* Ensure `codemirror.bundle.js` and `plugin.min.js` are present in the directory.
+## Состав файлов
 
-### Configuration
-```html
-<script type="text/javascript">
-    tinymce.init({
-        selector: "textarea",
-        // Do not include the default 'code' plugin, use 'codesource' instead
-        plugins: [
-            "advlist autolink lists link image charmap print preview anchor",
-            "searchreplace visualblocks fullscreen",
-            "insertdatetime media table contextmenu paste codesource"
-        ],
-        toolbar: "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | codesource",
-    });
-</script>
+```text
+codesource/
+├── plugin.js
+├── plugin.min.js
+├── codemirror.bundle.js
+└── COPYING
 ```
 
-### Licence
-<pre>
-This file is part of tinyMCE.
-YouTube for tinyMCE
-Copyright (C) 2011 - 2026  Gerits Aurelien <aurelien[at]magix-cms[dot]com>
+- `plugin.js` - читаемый исходный код плагина.
+- `plugin.min.js` - файл, используемый при подключении по этому имени.
+- `codemirror.bundle.js` - сборка CodeMirror 6 из исходного проекта.
+- `COPYING` - текст лицензии GPL.
 
-Redistributions of files must retain the above copyright notice.
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+При изменении `plugin.js` обновляйте и загружаемый `plugin.min.js`.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+Для тестирования в `plugin.min.js` можно сохранить тот же читаемый код. Расширение имени файла не требует обязательного сжатия его содержимого.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see .
+Не заменяйте `codemirror.bundle.js` произвольной другой сборкой CodeMirror. Плагин ожидает набор экспортов в глобальном объекте `CM6`.
 
-####DISCLAIMER
+## Установка как внешнего плагина
 
-Do not edit or add to this file if you wish to upgrade jimagine to newer
-versions in the future. If you wish to customize jimagine for your
-needs please refer to magix-dev.be for more information.
-</pre>
+Рекомендуемый для этого примера способ - хранить пользовательский плагин отдельно от файлов установленного TinyMCE.
+
+1. Скачайте файлы проекта.
+2. Создайте на сайте каталог:
+
+```text
+assets/editor/tinymce/plugins/codesource/
+```
+
+3. Поместите в него `plugin.min.js` и `codemirror.bundle.js`.
+4. При необходимости сохраните рядом читаемый `plugin.js`.
+5. Проверьте, что JavaScript-файлы доступны через браузер по ожидаемым адресам.
+
+Пример структуры:
+
+```text
+assets/
+└── editor/
+    └── tinymce/
+        └── plugins/
+            └── codesource/
+                ├── plugin.js
+                ├── plugin.min.js
+                └── codemirror.bundle.js
+```
+
+Не создавайте лишнюю вложенность вида:
+
+```text
+codesource/codesource/plugin.min.js
+```
+
+## Подключение в TinyMCE
+
+Добавьте плагин в существующую конфигурацию:
+
+```js
+tinymce.init({
+    selector: 'textarea',
+
+    external_plugins: {
+        codesource: '/assets/editor/tinymce/plugins/codesource/plugin.min.js'
+    },
+
+    toolbar: 'undo redo | bold italic | codesource'
+});
+```
+
+Это пример подключения, а не готовая замена всех настроек вашего редактора.
+
+Если `external_plugins` уже содержит другие плагины, добавьте `codesource` внутрь существующего объекта.
+
+Не создавайте второй `tinymce.init()` для уже инициализированного поля.
+
+Для установки сайта в подпапке учитывайте ее в публичном пути:
+
+```js
+external_plugins: {
+    codesource: '/site/assets/editor/tinymce/plugins/codesource/plugin.min.js'
+}
+```
+
+Плагин, объявленный через `external_plugins`, не требуется дополнительно дублировать в `plugins`.
+
+Штатную кнопку `code` можно убрать из панели, если она больше не нужна. Это не обязательное условие загрузки CodeSource.
+
+## Подключение в MODX
+
+Для TinyMCE Rich Text Editor добавьте параметр в действующий внешний JSON-конфиг:
+
+```json
+{
+    "external_plugins": {
+        "codesource": "/assets/editor/tinymce/plugins/codesource/plugin.min.js"
+    }
+}
+```
+
+Если в конфиге уже есть другие настройки, сохраните их.
+
+Например, совместно с типографом:
+
+```json
+{
+    "external_plugins": {
+        "typograf": "/assets/editor/tinymce/plugins/typograf/plugin.min.js",
+        "codesource": "/assets/editor/tinymce/plugins/codesource/plugin.min.js"
+    }
+}
+```
+
+Затем:
+
+1. Добавьте `codesource` в `tinymcerte.toolbar1` или другую используемую строку панели.
+2. Не удаляйте остальные кнопки без необходимости.
+3. Сохраните конфигурацию.
+4. Заново откройте ресурс.
+5. При необходимости выполните жесткое обновление страницы браузера.
+
+В `tinymcerte.external_config` указывается серверный путь к JSON-файлу, а внутри `external_plugins` - публичный URL JavaScript.
+
+## Использование
+
+1. Откройте содержимое в TinyMCE.
+2. Нажмите кнопку исходного кода CodeSource.
+3. Измените HTML.
+4. Нажмите «Сохранить», чтобы передать результат обратно в TinyMCE.
+5. Сохраните сам ресурс или форму приложения.
+
+Кнопка «Сохранить» в диалоге не заменяет сохранение ресурса MODX.
+
+Кнопка «Отмена» закрывает окно без применения изменений.
+
+Для поиска используйте кнопку «Поиск» в диалоге. При большом количестве кода прокручивается внутренняя область редактора, а не весь документ админки.
+
+## Размеры окна и прокрутка
+
+В этой адаптации отдельно ограничиваются:
+
+- контейнер внутри диалога TinyMCE;
+- внешний элемент CodeMirror;
+- элемент прокрутки `scrollDOM`.
+
+Это нужно, чтобы длинный HTML не растягивал окно и не скрывал заголовок и кнопки.
+
+Если меняете высоту редактора, согласуйте размеры контейнера и CodeMirror. Не увеличивайте только один из них.
+
+Не добавляйте глобальные CSS-правила для всех `.tox-dialog` ради изменения CodeSource: они могут повлиять на другие окна TinyMCE.
+
+## Проверка после установки
+
+Проверьте на тестовом содержимом:
+
+- открытие окна при закрытых инструментах разработчика;
+- видимость заголовка и кнопок;
+- внутреннюю прокрутку длинного документа;
+- поиск;
+- отмену диалога без изменения содержимого;
+- применение изменений;
+- Undo после применения;
+- сохранение ресурса и повторное открытие;
+- повторное открытие CodeSource без перезагрузки страницы;
+- кириллицу, таблицы, ссылки и блоки `pre`/`code`.
+
+Если на странице несколько экземпляров TinyMCE, проверьте каждый отдельно.
+
+## Диагностика
+
+### Кнопка не появляется
+
+Проверьте:
+
+- наличие `codesource` в панели инструментов;
+- применение `external_plugins`;
+- фактический URL загружаемого файла;
+- содержимое ответа `plugin.min.js`;
+- ошибки в консоли браузера.
+
+Проверьте, что по адресу CodeSource действительно загружается его код, а не файл другого плагина или HTML-страница ошибки.
+
+### Не загружается CodeMirror
+
+Рядом с `plugin.min.js` должен находиться:
+
+```text
+codemirror.bundle.js
+```
+
+Проверьте запрос к этому файлу во вкладке Network браузера.
+
+### После изменения кода остается старое поведение
+
+Убедитесь, что обновлен именно файл, указанный в конфигурации.
+
+Если подключен `plugin.min.js`, изменение только `plugin.js` не обновит работающий плагин.
+
+Также проверьте кеш браузера и заново откройте форму с TinyMCE.
+
+### На сайте изменяется HTML
+
+CodeSource передает текст обратно в TinyMCE. После этого действуют правила фильтрации и нормализации самого редактора, а также серверная обработка приложения.
+
+Плагин не отключает эти механизмы и не гарантирует побайтовое сохранение произвольного HTML.
+
+## Ограничения
+
+- Это редактор исходного HTML содержимого, а не PHP-редактор.
+- Плагин не выполняет код и не добавляет поддержку MODX или Fenom.
+- Подсветка не заменяет проверку корректности и безопасности HTML.
+- Shadow DOM изолирует стили CodeMirror, но не отменяет необходимость проверки размеров внешнего диалога.
+- Содержимое после сохранения обрабатывается TinyMCE и приложением.
+- Плагин следует предоставлять доверенным пользователям, которым разрешено редактировать исходную разметку.
+
+## Авторство
+
+Исходный проект:
+
+[gtraxx/tinymce-codesource](https://github.com/gtraxx/tinymce-codesource)
+
+Автор исходного плагина:
+
+Gerits Aurelien — Magix CMS  
+aurelien[at]magix-cms[dot]com
+
+Этот вариант содержит адаптацию для TinyMCE 6 и изменения поведения диалога, загрузки CodeMirror и сохранения содержимого.
+
+## Лицензия
+
+GPL-3.0-or-later.
+
+Copyright (C) 2008–2026 Gerits Aurelien.
+
+См. [COPYING](COPYING).
+
+При распространении сохраняйте сведения об авторстве и лицензии. Лицензионные уведомления зависимостей также должны сохраняться.
+
+Программа распространяется без гарантий, в том числе без гарантий пригодности для конкретной задачи.
