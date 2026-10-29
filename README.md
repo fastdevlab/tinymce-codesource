@@ -27,25 +27,23 @@
 
 Адаптация предназначена для TinyMCE 6.
 
-Подключение и работа окна проверялись пользователем в MODX Revolution 3.2.4 с TinyMCE Rich Text Editor. По результатам проверки исправлялись размеры контейнера и внутренняя прокрутка CodeMirror.
+Подключение и работа окна проверялись в MODX Revolution 3.2.4 с TinyMCE Rich Text Editor. По результатам проверки исправлялись размеры контейнера и внутренняя прокрутка CodeMirror.
 
 Это не подтверждение совместимости со всеми версиями MODX, TinyMCE, браузерами и сторонними настройками редактора. Перед использованием на рабочем сайте выполните проверку в своем окружении.
 
-Совместимость этой адаптации с TinyMCE 7 и более новыми основными версиями отдельно не заявлена.
+Совместимость этой адаптации с TinyMCE 7 и более новыми основными версиями не проверялась.
 
 ## Состав файлов
 
 ```text
 codesource/
-├── plugin.js
 ├── plugin.min.js
-├── codemirror.bundle.js
+├── codemirror.bundle.min.js
 └── COPYING
 ```
 
-- `plugin.js` - читаемый исходный код плагина.
 - `plugin.min.js` - файл, используемый при подключении по этому имени.
-- `codemirror.bundle.js` - сборка CodeMirror 6 из исходного проекта.
+- `codemirror.bundle.min.js` - сборка CodeMirror 6 из исходного проекта.
 - `COPYING` - текст лицензии GPL.
 
 При изменении `plugin.js` обновляйте и загружаемый `plugin.min.js`.
@@ -65,9 +63,8 @@ codesource/
 assets/editor/tinymce/plugins/codesource/
 ```
 
-3. Поместите в него `plugin.min.js` и `codemirror.bundle.js`.
-4. При необходимости сохраните рядом читаемый `plugin.js`.
-5. Проверьте, что JavaScript-файлы доступны через браузер по ожидаемым адресам.
+3. Поместите в него `plugin.min.js` и `codemirror.bundle.min.js`.
+4. Проверьте, что JavaScript-файлы доступны через браузер по ожидаемым адресам.
 
 Пример структуры:
 
@@ -77,9 +74,8 @@ assets/
     └── tinymce/
         └── plugins/
             └── codesource/
-                ├── plugin.js
                 ├── plugin.min.js
-                └── codemirror.bundle.js
+                └── codemirror.bundle.min.js
 ```
 
 Не создавайте лишнюю вложенность вида:
